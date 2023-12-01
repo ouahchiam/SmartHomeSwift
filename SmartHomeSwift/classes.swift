@@ -8,27 +8,50 @@
 import Foundation
 
 enum ErrorState {
-    case successful
-    case unsuccessful
+    case success
+    case invalidOption
+}
+
+enum DeviceState {
+    case on
+    case off
+    case updating
+    case disabled
 }
 
 class Device {
-    private var state: Bool = true // true is on, false is off
-    func toggleState() {
-        state = !state
+    private var state: DeviceState
+    func toggleState() -> ErrorState{
+        switch (state) {
+        case DeviceState.on:
+            state = DeviceState.off
+        case DeviceState.off:
+            state = DeviceState.on
+        default:
+            return ErrorState.invalidOption
+        }
+        return ErrorState.success
+    }
+    
+    func setDeviceState(desiredState: DeviceState) {
+        state = desiredState
+    }
+    
+    init(state: DeviceState) {
+        self.state = state
     }
 }
 
 class SmartHome {
     private var network: String
     private var smartHomeID: String
-    private var rooms = [String: Room]()
+    var rooms = [String: Room]()
     init(network: String, smartHomeID: String) {
         self.network = network
         self.smartHomeID = smartHomeID
     }
-    func addRoom(id: String, room: Room) {
-        rooms[id] = room
+    func addRoom(id: String, args: [String: String]) {
+        rooms[id] = Room(friendlyName: args["friendlyName"]!)
     }
     func removeRoom(id: String) {
         rooms[id] = nil
@@ -40,19 +63,33 @@ class Room {
     private var friendlyName: String
     func toggleMasterSwitch() {
         for device in devices {
-            device.toggleState()
+            let result = device.toggleState()
+            if result == ErrorState.invalidOption {
+                print("Invalid option.")
+            }
         }
     }
     func addDevice(device: Device) -> ErrorState {
         devices.append(device)
-        return ErrorState.successful
+        return ErrorState.success
     }
     init(friendlyName: String) {
         self.friendlyName = friendlyName
     }
 }
 
-class Camera: Device {
-    
+class SmartBulb: Device {
+    var color = "#ffffff"
+    private var brightness = 100 // descending, 100 to 0
+    func decreaseBrightness() {
+        if brightness > 0 {
+            brightness -= 10
+        }
+    }
+    func increaseBrightness() {
+        if brightness < 100 {
+            brightness += 10
+        }
+    }
 }
 
